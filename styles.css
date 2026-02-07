@@ -145,53 +145,6 @@
             pointer-events: none;
         }
 
-        #comboDisplay {
-            position: absolute;
-            top: 120px;
-            left: 50%;
-            transform: translateX(-50%) scale(1);
-            background: rgba(0,0,0,0.9);
-            padding: 10px 25px;
-            border-radius: 10px;
-            border: 3px solid #ef4444;
-            font-size: 24px;
-            font-weight: bold;
-            color: #ef4444;
-            text-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
-            pointer-events: none;
-            animation: comboPulse 0.5s ease-in-out infinite;
-        }
-
-        @keyframes comboPulse {
-            0%, 100% { transform: translateX(-50%) scale(1); }
-            50% { transform: translateX(-50%) scale(1.1); }
-        }
-
-        #comboDisplay.tier2 {
-            border-color: #f59e0b;
-            color: #f59e0b;
-            text-shadow: 0 0 15px rgba(245, 158, 11, 0.8);
-        }
-
-        #comboDisplay.tier3 {
-            border-color: #a855f7;
-            color: #a855f7;
-            text-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
-        }
-
-        #comboDisplay.tier4 {
-            border-color: #ec4899;
-            color: #ec4899;
-            text-shadow: 0 0 15px rgba(236, 72, 153, 0.8);
-        }
-
-        #comboDisplay.tier5 {
-            border-color: #fbbf24;
-            color: #fbbf24;
-            text-shadow: 0 0 20px rgba(251, 191, 36, 1);
-            font-size: 28px;
-        }
-
         /* Power-up Selection Screen */
         #powerupScreen {
             position: absolute;
