@@ -8,7 +8,7 @@
             // Player stats
             PLAYER_HP: 100,
             PLAYER_SPEED: 3,
-            PLAYER_BASE_SPEED: 1.5, // Slightly faster than base enemy (1.2)
+            PLAYER_BASE_SPEED: 1.6, // Slightly faster than base enemy (1.2)
             PLAYER_RADIUS: 16,
             
             // Permanent upgrades (bought with coins)
@@ -95,6 +95,21 @@
         };
 
         // ============================================
+        // FIREBASE SAVE DATA
+        // ============================================
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPGBLQ6d_bXxJADFy8cXVTx_Mz14dvkEo",
+            authDomain: "survivor-arena-27162.firebaseapp.com",
+            databaseURL: "https://survivor-arena-27162-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "survivor-arena-27162",
+            storageBucket: "survivor-arena-27162.firebasestorage.app",
+            messagingSenderId: "861347414945",
+            appId: "1:861347414945:web:c2e446b23eb62065a541e0",
+            measurementId: "G-SWMXV5QQZN"
+        };
+
+        // ============================================
         // GAME STATE
         // ============================================
         const game = {
@@ -151,6 +166,12 @@
                 dy: 0,
                 decay: 0.88
             },
+
+            joystick: {
+                active: false,
+                x: 0,
+                y: 0
+            },
             
             // Power-ups
             powerups: []
@@ -158,7 +179,27 @@
 
         game.ctx = game.canvas.getContext('2d');
         
-        // Load saved data from localStorage
+        // Load saved data from localStorage + Firebase
+        const firebaseUserId = (() => {
+            const existing = localStorage.getItem('survivorPlayerId');
+            if (existing) return existing;
+            const newId = `player_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+            localStorage.setItem('survivorPlayerId', newId);
+            return newId;
+        })();
+
+        let firebaseDb = null;
+        let firebaseReady = false;
+
+        function initFirebase() {
+            if (!window.firebase) return;
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            firebaseDb = firebase.database();
+            firebaseReady = true;
+        }
+
         function loadGameData() {
             const saved = localStorage.getItem('survivorGameData');
             if (saved) {
@@ -166,16 +207,33 @@
                 game.permanentUpgrades = data.upgrades || { damage: 0, maxHp: 0, defense: 0 };
                 game.lifetimeCoins = data.lifetimeCoins || 0;
             }
+
+            if (firebaseReady) {
+                firebaseDb.ref(`players/${firebaseUserId}/data`).once('value').then((snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        game.permanentUpgrades = data.upgrades || game.permanentUpgrades;
+                        game.lifetimeCoins = data.lifetimeCoins || game.lifetimeCoins;
+                        updateShopDisplay();
+                    }
+                });
+            }
         }
         
         function saveGameData() {
             const data = {
                 upgrades: game.permanentUpgrades,
-                lifetimeCoins: game.lifetimeCoins
+                lifetimeCoins: game.lifetimeCoins,
+                updatedAt: new Date().toISOString()
             };
             localStorage.setItem('survivorGameData', JSON.stringify(data));
+
+            if (firebaseReady) {
+                firebaseDb.ref(`players/${firebaseUserId}/data`).set(data);
+            }
         }
         
+        initFirebase();
         loadGameData();
 
         // ============================================
@@ -417,10 +475,10 @@
                 type: 'weapon',
                 maxLevel: 8,
                 description: 'Damage over time area',
-                stats: { damage: 2, radius: 100, duration: 300, dotDamage: 1 },
+                stats: { damage: 3, radius: 100, duration: 300, dotDamage: 2 },
                 onUpgrade: (stats, level) => {
                     stats.damage += 1;
-                    stats.dotDamage += 0.5;
+                    stats.dotDamage += 1;
                     stats.radius += 15;
                 },
                 evolutionRequires: 'pickupRange',
@@ -462,11 +520,11 @@
                 type: 'weapon',
                 maxLevel: 8,
                 description: 'Massive poison field',
-                stats: { damage: 6, radius: 200, duration: 400, dotDamage: 3 },
+                stats: { damage: 8, radius: 200, duration: 400, dotDamage: 4 },
                 isEvolved: true,
                 onUpgrade: (stats, level) => {
                     stats.damage += 2;
-                    stats.dotDamage += 1;
+                    stats.dotDamage += 1.5;
                     stats.radius += 20;
                 }
             },
@@ -2353,6 +2411,58 @@
         // INPUT HANDLING
         // ============================================
         const canvas = game.canvas;
+        const joystickBase = document.getElementById('joystickBase');
+        const joystickThumb = document.getElementById('joystickThumb');
+
+        function updateJoystickFromPointer(clientX, clientY) {
+            const rect = joystickBase.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const maxDistance = rect.width / 2 - joystickThumb.offsetWidth / 2;
+
+            let dx = clientX - centerX;
+            let dy = clientY - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > maxDistance) {
+                const ratio = maxDistance / distance;
+                dx *= ratio;
+                dy *= ratio;
+            }
+
+            game.joystick.x = dx / maxDistance;
+            game.joystick.y = dy / maxDistance;
+            joystickThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        }
+
+        function resetJoystick() {
+            game.joystick.active = false;
+            game.joystick.x = 0;
+            game.joystick.y = 0;
+            joystickThumb.style.transform = 'translate(-50%, -50%)';
+        }
+
+        if (joystickBase) {
+            joystickBase.addEventListener('pointerdown', (e) => {
+                if (!game.running || game.paused) return;
+                joystickBase.setPointerCapture(e.pointerId);
+                game.joystick.active = true;
+                updateJoystickFromPointer(e.clientX, e.clientY);
+            });
+
+            joystickBase.addEventListener('pointermove', (e) => {
+                if (!game.running || game.paused || !game.joystick.active) return;
+                updateJoystickFromPointer(e.clientX, e.clientY);
+            });
+
+            joystickBase.addEventListener('pointerup', () => {
+                resetJoystick();
+            });
+
+            joystickBase.addEventListener('pointercancel', () => {
+                resetJoystick();
+            });
+        }
 
         // Scroll-based movement
         canvas.addEventListener('wheel', (e) => {
@@ -2787,11 +2897,18 @@
                     game.spawnTimer = 0;
                 }
                 
-                // Apply movement decay
-                game.movement.dx *= game.movement.decay;
-                game.movement.dy *= game.movement.decay;
-                if (Math.abs(game.movement.dx) < 0.1) game.movement.dx = 0;
-                if (Math.abs(game.movement.dy) < 0.1) game.movement.dy = 0;
+                const joystickActive = game.joystick.active || game.joystick.x !== 0 || game.joystick.y !== 0;
+                if (joystickActive && game.player) {
+                    const joystickSpeed = CONFIG.PLAYER_BASE_SPEED * 12 * game.player.speedMultiplier;
+                    game.movement.dx = game.joystick.x * joystickSpeed;
+                    game.movement.dy = game.joystick.y * joystickSpeed;
+                } else {
+                    // Apply movement decay
+                    game.movement.dx *= game.movement.decay;
+                    game.movement.dy *= game.movement.decay;
+                    if (Math.abs(game.movement.dx) < 0.1) game.movement.dx = 0;
+                    if (Math.abs(game.movement.dy) < 0.1) game.movement.dy = 0;
+                }
                 
                 // Update entities
                 if (game.player) {
@@ -2923,6 +3040,7 @@
             game.screenShakeIntensity = 0;
             
             game.movement = { dx: 0, dy: 0, decay: 0.88 };
+            game.joystick = { active: false, x: 0, y: 0 };
             
             // Create player
             game.player = new Player(
