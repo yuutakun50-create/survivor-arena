@@ -8,7 +8,7 @@
             // Player stats
             PLAYER_HP: 100,
             PLAYER_SPEED: 3,
-            PLAYER_BASE_SPEED: 1.6, // Slightly faster than base enemy (1.2)
+            PLAYER_BASE_SPEED: 1.38, // 15% faster than base enemy (1.2)
             PLAYER_RADIUS: 16,
             
             // Permanent upgrades (bought with coins)
@@ -2525,11 +2525,11 @@
             const ctx = game.ctx;
             
             // Clear canvas
-            ctx.fillStyle = '#0f172a';
+            ctx.fillStyle = '#111827';
             ctx.fillRect(0, 0, game.canvas.width, game.canvas.height);
 
             // Grid background
-            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
             ctx.lineWidth = 1;
             for (let i = 0; i < game.canvas.width; i += 50) {
                 ctx.beginPath();
@@ -2543,6 +2543,22 @@
                 ctx.lineTo(game.canvas.width, i);
                 ctx.stroke();
             }
+
+            // Ambient light glow
+            ctx.save();
+            const ambient = ctx.createRadialGradient(
+                game.canvas.width * 0.6,
+                game.canvas.height * 0.3,
+                50,
+                game.canvas.width * 0.6,
+                game.canvas.height * 0.3,
+                game.canvas.width * 0.9
+            );
+            ambient.addColorStop(0, 'rgba(59, 130, 246, 0.18)');
+            ambient.addColorStop(1, 'rgba(15, 23, 42, 0)');
+            ctx.fillStyle = ambient;
+            ctx.fillRect(0, 0, game.canvas.width, game.canvas.height);
+            ctx.restore();
 
             if (!game.paused) {
                 // Update game time
@@ -2567,7 +2583,7 @@
                 
                 const joystickActive = game.joystick.active || game.joystick.x !== 0 || game.joystick.y !== 0;
                 if (joystickActive && game.player) {
-                    const joystickSpeed = CONFIG.PLAYER_BASE_SPEED * 12 * game.player.speedMultiplier;
+                    const joystickSpeed = CONFIG.PLAYER_BASE_SPEED * 5 * game.player.speedMultiplier;
                     game.movement.dx = game.joystick.x * joystickSpeed;
                     game.movement.dy = game.joystick.y * joystickSpeed;
                 } else {
