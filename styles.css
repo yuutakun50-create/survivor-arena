@@ -202,10 +202,12 @@
             background: rgba(0,0,0,0.95);
             display: none;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             z-index: 100;
             padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         #powerupScreen.show {
@@ -231,6 +233,11 @@
             flex-wrap: wrap;
             justify-content: center;
             max-width: 1000px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 10px;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
         }
 
         .powerup-card {
@@ -299,6 +306,12 @@
             align-items: center;
             gap: 20px;
             z-index: 50;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #startingPowerupScreen {
+            justify-content: flex-start;
         }
 
         .screen.show {
@@ -432,5 +445,47 @@
             font-size: 12px;
             pointer-events: none;
             border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        #joystickContainer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 40;
+            pointer-events: auto;
+        }
+
+        #joystickBase {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.35), rgba(15, 23, 42, 0.9));
+            border: 2px solid rgba(59, 130, 246, 0.8);
+            position: relative;
+            touch-action: none;
+        }
+
+        #joystickThumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(148, 163, 184, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.05s ease-out;
+        }
+
+        @media (pointer: fine) {
+            #joystickContainer {
+                opacity: 0.6;
+            }
         }
     
