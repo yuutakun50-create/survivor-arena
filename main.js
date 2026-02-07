@@ -27,7 +27,6 @@
             WAVE_DURATION: 1800, // 30 seconds per wave (at 60fps)
             BOSS_WAVE_INTERVAL: 5, // Boss every 5 waves
             WAVE_COMPLETION_HEAL: 0.3, // Heal 30% of max HP
-            WAVE_COMPLETION_BONUS: 20, // Bonus coins per wave
             EARLY_WAVE_LIMIT: 3,
             EARLY_WAVE_SPAWN_RATES: [1, 2, 3], // Spawn rates for waves 1-3
             EARLY_WAVE_STAT_MULTIPLIERS: {
@@ -47,16 +46,8 @@
             CRIT_CHANCE: 0.15, // 15% chance
             CRIT_MULTIPLIER: 2.5, // 2.5x damage
             
-            // Combo system
-            COMBO_TIMEOUT: 180, // 3 seconds (at 60fps)
-            COMBO_COIN_BONUS: 0.2, // 20% bonus coins per combo tier
-            COMBO_TIERS: [5, 10, 20, 50, 100], // Kills needed for each tier
-            
-            // Coin system
+            // Coin system (earned on game over)
             COIN_MAGNET_RADIUS: 120,
-            BASE_COIN_DROP: 3,
-            BOSS_COIN_MULTIPLIER: 10,
-            WAVE_COIN_MULTIPLIER: 0.5, // Additional coins per wave
             
             // Enemy types and spawn weights by wave
             ENEMY_SPAWN_WEIGHTS: {
@@ -134,17 +125,12 @@
             projectiles: [],
             particles: [],
             xpOrbs: [],
-            coins: [], // New: coin drops
+            coins: [], // Legacy coin drops (no longer spawned)
             damageTexts: [], // Floating damage numbers
             
             // Stats
             enemiesKilled: 0,
-            totalCoins: 0, // Total coins collected
-            
-            // Combo system
-            comboCount: 0,
-            comboTimer: 0,
-            comboTier: 0,
+            totalCoins: 0, // Total coins earned (awarded on game over)
             
             // Screen effects
             screenShake: 0,
@@ -289,7 +275,7 @@
                 name: 'Magic Bolt',
                 icon: '⚡',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Shoots projectiles at enemies',
                 stats: { damage: 15, cooldown: 45, count: 1 },
                 onUpgrade: (stats, level) => {
@@ -305,7 +291,7 @@
                 name: 'Lightning Strike',
                 icon: '⚡',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Calls down lightning bolts',
                 stats: { damage: 40, cooldown: 180, count: 1, range: 200 },
                 onUpgrade: (stats, level) => {
@@ -321,7 +307,7 @@
                 name: 'Spinning Blade',
                 icon: '🗡️',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Blades orbit around you',
                 stats: { damage: 8, count: 2, radius: 60, speed: 0.08 },
                 onUpgrade: (stats, level) => {
@@ -337,7 +323,7 @@
                 name: 'Fire Circle',
                 icon: '🔥',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Creates burning area around you',
                 stats: { damage: 3, radius: 80, duration: 120 },
                 onUpgrade: (stats, level) => {
@@ -353,7 +339,7 @@
                 name: 'Attack Drone',
                 icon: '🛸',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Drone shoots at enemies',
                 stats: { damage: 12, cooldown: 90, count: 1, range: 250 },
                 onUpgrade: (stats, level) => {
@@ -370,70 +356,55 @@
                 name: 'Arcane Barrage',
                 icon: '✨',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 1,
                 description: 'Enhanced magic bolts',
                 stats: { damage: 35, cooldown: 20, count: 5 },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 8;
-                    stats.count++;
-                }
+                onUpgrade: () => {}
             },
             
             stormCaller: {
                 name: 'Storm Caller',
                 icon: '⛈️',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 1,
                 description: 'Devastating lightning storm',
                 stats: { damage: 80, cooldown: 90, count: 4, range: 300 },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 15;
-                    stats.count++;
-                }
+                onUpgrade: () => {}
             },
             
             bladeMaster: {
                 name: 'Blade Master',
                 icon: '⚔️',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 1,
                 description: 'Superior blade control',
                 stats: { damage: 20, count: 6, radius: 100, speed: 0.12 },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 5;
-                    stats.count++;
-                }
+                onUpgrade: () => {}
             },
             
             inferno: {
                 name: 'Inferno',
                 icon: '🌋',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 1,
                 description: 'Massive burning field',
                 stats: { damage: 8, radius: 180, duration: 200 },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 2;
-                    stats.radius += 15;
-                }
+                onUpgrade: () => {}
             },
             
             droneSwarm: {
                 name: 'Drone Swarm',
                 icon: '🚁',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 1,
                 description: 'Army of attack drones',
                 stats: { damage: 25, cooldown: 45, count: 4, range: 350 },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 8;
-                    stats.count++;
-                }
+                onUpgrade: () => {}
             },
             
             // New Weapons
@@ -441,12 +412,23 @@
                 name: 'Laser Beam',
                 icon: '🔆',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Continuous damage beam',
-                stats: { damage: 5, cooldown: 5, length: 200, width: 10 },
+                stats: { damage: 5, cooldown: 5, length: 140, width: 10, range: 140, count: 1 },
                 onUpgrade: (stats, level) => {
                     stats.damage += 2;
-                    if (level % 2 === 0) stats.length += 30;
+                    if (level === 2) {
+                        stats.range = 190;
+                    } else if (level === 3) {
+                        stats.range = 240;
+                        stats.count = 2;
+                    } else if (level === 4) {
+                        stats.count = 3;
+                    } else if (level === 5) {
+                        stats.range = 320;
+                        stats.count = 4;
+                    }
+                    stats.length = stats.range;
                     if (level >= 4) stats.width += 2;
                 },
                 evolutionRequires: 'attackBoost',
@@ -457,7 +439,7 @@
                 name: 'Boomerang',
                 icon: '🪃',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Returns to you',
                 stats: { damage: 12, cooldown: 120, count: 1, speed: 8 },
                 onUpgrade: (stats, level) => {
@@ -473,7 +455,7 @@
                 name: 'Poison Cloud',
                 icon: '☠️',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 5,
                 description: 'Damage over time area',
                 stats: { damage: 3, radius: 100, duration: 300, dotDamage: 2 },
                 onUpgrade: (stats, level) => {
@@ -490,43 +472,33 @@
                 name: 'Mega Laser',
                 icon: '⚡',
                 type: 'weapon',
-                maxLevel: 8,
-                description: 'Devastating laser beam',
-                stats: { damage: 15, cooldown: 5, length: 350, width: 20 },
+                maxLevel: 1,
+                description: 'Red focus-fire laser barrage',
+                stats: { damage: 15, cooldown: 5, length: 360, width: 18, range: 360, count: 4, color: '#ef4444', focusFire: true },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 5;
-                    stats.length += 30;
-                }
+                onUpgrade: () => {}
             },
             
             tripleBoomerang: {
                 name: 'Triple Boomerang',
                 icon: '🎯',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 1,
                 description: 'Three deadly boomerangs',
                 stats: { damage: 30, cooldown: 60, count: 3, speed: 12 },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 8;
-                    stats.count++;
-                }
+                onUpgrade: () => {}
             },
             
             toxicWave: {
                 name: 'Toxic Wave',
                 icon: '☢️',
                 type: 'weapon',
-                maxLevel: 8,
+                maxLevel: 1,
                 description: 'Massive poison field',
                 stats: { damage: 8, radius: 200, duration: 400, dotDamage: 4 },
                 isEvolved: true,
-                onUpgrade: (stats, level) => {
-                    stats.damage += 2;
-                    stats.dotDamage += 1.5;
-                    stats.radius += 20;
-                }
+                onUpgrade: () => {}
             },
             
             // Passive Upgrades
@@ -636,9 +608,9 @@
                     const definition = POWERUP_TYPES[powerupId];
                     definition.onUpgrade(powerup.stats, powerup.level);
                     
-                    // Check for evolution (Level 6 = Level 5 + 1 more upgrade)
+                    // Check for evolution (Level 5)
                     if (definition.evolutionRequires && 
-                        powerup.level >= 6 && 
+                        powerup.level >= 5 && 
                         this.powerups.has(definition.evolutionRequires)) {
                         
                         // Evolve weapon
@@ -869,18 +841,22 @@
                 state.cooldown--;
                 
                 if (state.cooldown <= 0) {
-                    const nearest = this.findNearestEnemies(1);
-                    if (nearest.length > 0) {
-                        const enemy = nearest[0];
-                        const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-                        
-                        // Create laser beam
-                        game.projectiles.push(new Laser(
-                            this.x, this.y, angle,
-                            powerup.stats.damage * this.damageMultiplier * this.permanentDamageBonus,
-                            powerup.stats.length,
-                            powerup.stats.width
-                        ));
+                    const targets = this.findNearestEnemies(powerup.stats.count, powerup.stats.range);
+                    if (targets.length > 0) {
+                        const focusFire = powerup.stats.focusFire && targets.length === 1;
+                        for (let i = 0; i < powerup.stats.count; i++) {
+                            const enemy = focusFire ? targets[0] : targets[i % targets.length];
+                            const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+                            
+                            // Create laser beam
+                            game.projectiles.push(new Laser(
+                                this.x, this.y, angle,
+                                powerup.stats.damage * this.damageMultiplier * this.permanentDamageBonus,
+                                powerup.stats.length,
+                                powerup.stats.width,
+                                powerup.stats.color || '#60a5fa'
+                            ));
+                        }
                     }
                     state.cooldown = cooldown;
                 }
@@ -921,8 +897,14 @@
                 });
             }
 
-            findNearestEnemies(count) {
-                const sorted = [...game.enemies].sort((a, b) => {
+            findNearestEnemies(count, range = null) {
+                const filtered = range === null
+                    ? [...game.enemies]
+                    : game.enemies.filter(enemy => {
+                        const dist = Math.sqrt((this.x - enemy.x) ** 2 + (this.y - enemy.y) ** 2);
+                        return dist <= range;
+                    });
+                const sorted = filtered.sort((a, b) => {
                     const distA = Math.sqrt((this.x - a.x) ** 2 + (this.y - a.y) ** 2);
                     const distB = Math.sqrt((this.x - b.x) ** 2 + (this.y - b.y) ** 2);
                     return distA - distB;
@@ -1037,71 +1019,16 @@
                 });
                 
                 // Shadow
-                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
                 ctx.beginPath();
-                ctx.arc(this.x + 3, this.y + 3, this.radius, 0, Math.PI * 2);
+                ctx.arc(this.x + 4, this.y + 4, this.radius, 0, Math.PI * 2);
                 ctx.fill();
 
-                // CUSTOM PLAYER SPRITE - Knight/Hero
-                // Body (armor)
-                const bodyGradient = ctx.createRadialGradient(
-                    this.x - 3, this.y - 3, 0,
-                    this.x, this.y, this.radius
-                );
-                bodyGradient.addColorStop(0, '#60a5fa');
-                bodyGradient.addColorStop(1, '#2563eb');
-                ctx.fillStyle = bodyGradient;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Armor plates
-                ctx.strokeStyle = '#1e40af';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius * 0.7, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Helmet visor
-                ctx.fillStyle = '#1e3a8a';
-                ctx.fillRect(this.x - 8, this.y - 4, 16, 6);
-                
-                // Eye glow (cyan)
-                ctx.fillStyle = '#22d3ee';
-                ctx.fillRect(this.x - 6, this.y - 2, 4, 2);
-                ctx.fillRect(this.x + 2, this.y - 2, 4, 2);
-                
-                // Shoulder pads
-                ctx.fillStyle = '#3b82f6';
-                ctx.beginPath();
-                ctx.arc(this.x - this.radius * 0.8, this.y - this.radius * 0.3, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(this.x + this.radius * 0.8, this.y - this.radius * 0.3, 5, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Chest emblem (star)
-                ctx.fillStyle = '#fbbf24';
-                ctx.beginPath();
-                for (let i = 0; i < 5; i++) {
-                    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
-                    const x = this.x + Math.cos(angle) * 4;
-                    const y = this.y + 2 + Math.sin(angle) * 4;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fill();
-
-                // Outline glow
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 3;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#3b82f6';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.shadowBlur = 0;
+                // Emoji player
+                ctx.font = `${this.radius * 2.2}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🧙‍♂️', this.x, this.y + 1);
                 
                 // Level indicator (small badge)
                 if (this.level > 1) {
@@ -1178,6 +1105,7 @@
                 this.x = x;
                 this.y = y;
                 this.type = type;
+                this.wave = game.currentWave;
                 
                 // Scale stats based on wave number
                 const waveMult = Math.pow(CONFIG.ENEMY_HP_SCALE, game.currentWave - 1);
@@ -1297,38 +1225,14 @@
             die() {
                 game.enemiesKilled++;
                 
-                // Update combo
-                updateCombo();
+                // Award gold (tracked for end-of-game reward)
+                const waveGold = Math.max(1, this.wave || game.currentWave);
+                const goldEarned = this.isBoss ? waveGold * 10 : waveGold;
+                game.totalCoins += goldEarned;
+                updateCoinDisplay();
                 
-                // Calculate coin drops (more coins in higher waves + combo bonus)
-                const baseCoinDrop = CONFIG.BASE_COIN_DROP + 
-                    Math.floor(game.currentWave * CONFIG.WAVE_COIN_MULTIPLIER);
-                
-                let coinCount = baseCoinDrop;
-                let coinValue = 1;
-                
-                // Apply combo bonus
-                const comboBonus = 1 + (game.comboTier * CONFIG.COMBO_COIN_BONUS);
-                coinCount = Math.floor(coinCount * comboBonus);
-                
-                // Boss drops way more coins
                 if (this.isBoss) {
-                    coinCount = baseCoinDrop * CONFIG.BOSS_COIN_MULTIPLIER;
-                    coinValue = 5;
                     addScreenShake(25); // Big shake on boss death
-                } else if (this.type === 'tank') {
-                    coinCount = Math.floor(baseCoinDrop * 2 * comboBonus);
-                } else if (this.type === 'fast') {
-                    coinCount = Math.floor(baseCoinDrop * 0.7 * comboBonus);
-                }
-                
-                // Drop coins
-                for (let i = 0; i < coinCount; i++) {
-                    const angle = (Math.PI * 2 * i) / coinCount;
-                    const distance = this.radius + Math.random() * 20;
-                    const coinX = this.x + Math.cos(angle) * distance;
-                    const coinY = this.y + Math.sin(angle) * distance;
-                    game.coins.push(new Coin(coinX, coinY, coinValue));
                 }
                 
                 // Drop XP
@@ -1367,242 +1271,33 @@
                 if (this.isBoss) {
                     const gradient = ctx.createRadialGradient(
                         this.x, this.y, 0,
-                        this.x, this.y, this.radius * 1.5
+                        this.x, this.y, this.radius * 1.6
                     );
-                    gradient.addColorStop(0, 'rgba(220, 38, 38, 0.3)');
-                    gradient.addColorStop(1, 'rgba(220, 38, 38, 0)');
+                    gradient.addColorStop(0, 'rgba(239, 68, 68, 0.35)');
+                    gradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
                     ctx.fillStyle = gradient;
                     ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius * 1.5, 0, Math.PI * 2);
+                    ctx.arc(this.x, this.y, this.radius * 1.6, 0, Math.PI * 2);
                     ctx.fill();
                 }
                 
                 // Shadow
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 ctx.beginPath();
-                ctx.arc(this.x + 2, this.y + 2, this.radius, 0, Math.PI * 2);
+                ctx.arc(this.x + 3, this.y + 3, this.radius, 0, Math.PI * 2);
                 ctx.fill();
 
-                // CUSTOM ENEMY SPRITES based on type
-                if (this.type === 'basic') {
-                    // Basic Slime - Red blob
-                    const bodyGradient = ctx.createRadialGradient(
-                        this.x, this.y - this.radius * 0.3, 0,
-                        this.x, this.y, this.radius
-                    );
-                    bodyGradient.addColorStop(0, '#f87171');
-                    bodyGradient.addColorStop(1, '#dc2626');
-                    ctx.fillStyle = bodyGradient;
-                    
-                    // Squash effect (animated)
-                    const squash = 1 + Math.sin(game.gameTime * 0.1) * 0.1;
-                    ctx.save();
-                    ctx.translate(this.x, this.y);
-                    ctx.scale(1 / squash, squash);
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                    
-                    // Eyes
-                    ctx.fillStyle = '#fff';
-                    ctx.beginPath();
-                    ctx.arc(this.x - 4, this.y - 3, 3, 0, Math.PI * 2);
-                    ctx.arc(this.x + 4, this.y - 3, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = '#000';
-                    ctx.beginPath();
-                    ctx.arc(this.x - 4, this.y - 3, 1.5, 0, Math.PI * 2);
-                    ctx.arc(this.x + 4, this.y - 3, 1.5, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                } else if (this.type === 'fast') {
-                    // Fast Bat - Orange flying creature
-                    const wingFlap = Math.sin(game.gameTime * 0.3) * 5;
-                    
-                    // Body
-                    ctx.fillStyle = '#fb923c';
-                    ctx.beginPath();
-                    ctx.ellipse(this.x, this.y, this.radius, this.radius * 0.8, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Wings
-                    ctx.fillStyle = '#f97316';
-                    ctx.beginPath();
-                    // Left wing
-                    ctx.moveTo(this.x - this.radius * 0.5, this.y);
-                    ctx.quadraticCurveTo(
-                        this.x - this.radius * 1.5, 
-                        this.y - wingFlap,
-                        this.x - this.radius, 
-                        this.y + 5
-                    );
-                    ctx.lineTo(this.x - this.radius * 0.5, this.y + 3);
-                    ctx.fill();
-                    
-                    // Right wing
-                    ctx.beginPath();
-                    ctx.moveTo(this.x + this.radius * 0.5, this.y);
-                    ctx.quadraticCurveTo(
-                        this.x + this.radius * 1.5, 
-                        this.y - wingFlap,
-                        this.x + this.radius, 
-                        this.y + 5
-                    );
-                    ctx.lineTo(this.x + this.radius * 0.5, this.y + 3);
-                    ctx.fill();
-                    
-                    // Eyes (red glowing)
-                    ctx.fillStyle = '#ef4444';
-                    ctx.beginPath();
-                    ctx.arc(this.x - 3, this.y - 2, 2, 0, Math.PI * 2);
-                    ctx.arc(this.x + 3, this.y - 2, 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                } else if (this.type === 'tank') {
-                    // Tank Golem - Purple armored
-                    // Body
-                    const bodyGradient = ctx.createRadialGradient(
-                        this.x, this.y - this.radius * 0.3, 0,
-                        this.x, this.y, this.radius
-                    );
-                    bodyGradient.addColorStop(0, '#a78bfa');
-                    bodyGradient.addColorStop(1, '#7c3aed');
-                    ctx.fillStyle = bodyGradient;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Armor pieces
-                    ctx.fillStyle = '#6d28d9';
-                    ctx.fillRect(this.x - this.radius * 0.7, this.y - this.radius * 0.5, this.radius * 1.4, 5);
-                    ctx.fillRect(this.x - this.radius * 0.7, this.y + this.radius * 0.2, this.radius * 1.4, 5);
-                    
-                    // Spikes
-                    ctx.fillStyle = '#581c87';
-                    for (let i = 0; i < 6; i++) {
-                        const angle = (Math.PI * 2 * i) / 6;
-                        const spikeX = this.x + Math.cos(angle) * this.radius;
-                        const spikeY = this.y + Math.sin(angle) * this.radius;
-                        ctx.beginPath();
-                        ctx.moveTo(spikeX, spikeY);
-                        ctx.lineTo(
-                            spikeX + Math.cos(angle) * 6,
-                            spikeY + Math.sin(angle) * 6
-                        );
-                        ctx.lineTo(
-                            spikeX + Math.cos(angle + 0.3) * 4,
-                            spikeY + Math.sin(angle + 0.3) * 4
-                        );
-                        ctx.fill();
-                    }
-                    
-                    // Eyes (glowing)
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.beginPath();
-                    ctx.arc(this.x - 6, this.y - 4, 3, 0, Math.PI * 2);
-                    ctx.arc(this.x + 6, this.y - 4, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                } else if (this.type === 'boss') {
-                    // BOSS - Demon Lord
-                    // Main body with gradient
-                    const bodyGradient = ctx.createRadialGradient(
-                        this.x, this.y - this.radius * 0.3, 0,
-                        this.x, this.y, this.radius
-                    );
-                    bodyGradient.addColorStop(0, '#ef4444');
-                    bodyGradient.addColorStop(0.5, '#dc2626');
-                    bodyGradient.addColorStop(1, '#991b1b');
-                    ctx.fillStyle = bodyGradient;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Demon horns (animated)
-                    const hornGlow = Math.sin(game.gameTime * 0.1) * 0.3 + 0.7;
-                    ctx.fillStyle = `rgba(251, 191, 36, ${hornGlow})`;
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = '#fbbf24';
-                    
-                    // Left horn
-                    ctx.beginPath();
-                    ctx.moveTo(this.x - this.radius * 0.5, this.y - this.radius * 0.8);
-                    ctx.quadraticCurveTo(
-                        this.x - this.radius * 1.2,
-                        this.y - this.radius * 1.5,
-                        this.x - this.radius * 0.8,
-                        this.y - this.radius * 1.8
-                    );
-                    ctx.lineTo(this.x - this.radius * 0.6, this.y - this.radius * 1.5);
-                    ctx.quadraticCurveTo(
-                        this.x - this.radius * 0.9,
-                        this.y - this.radius * 1.2,
-                        this.x - this.radius * 0.5, 
-                        this.y - this.radius * 0.9
-                    );
-                    ctx.fill();
-                    
-                    // Right horn (mirror)
-                    ctx.beginPath();
-                    ctx.moveTo(this.x + this.radius * 0.5, this.y - this.radius * 0.8);
-                    ctx.quadraticCurveTo(
-                        this.x + this.radius * 1.2,
-                        this.y - this.radius * 1.5,
-                        this.x + this.radius * 0.8,
-                        this.y - this.radius * 1.8
-                    );
-                    ctx.lineTo(this.x + this.radius * 0.6, this.y - this.radius * 1.5);
-                    ctx.quadraticCurveTo(
-                        this.x + this.radius * 0.9,
-                        this.y - this.radius * 1.2,
-                        this.x + this.radius * 0.5, 
-                        this.y - this.radius * 0.9
-                    );
-                    ctx.fill();
-                    
-                    ctx.shadowBlur = 0;
-                    
-                    // Angry eyes (glowing)
-                    const eyeGlow = Math.sin(game.gameTime * 0.2) * 5;
-                    ctx.shadowBlur = 10 + eyeGlow;
-                    ctx.shadowColor = '#fbbf24';
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.beginPath();
-                    ctx.arc(this.x - 10, this.y - 5, 6, 0, Math.PI * 2);
-                    ctx.arc(this.x + 10, this.y - 5, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = '#dc2626';
-                    ctx.beginPath();
-                    ctx.arc(this.x - 10, this.y - 5, 3, 0, Math.PI * 2);
-                    ctx.arc(this.x + 10, this.y - 5, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    
-                    // Demon mouth/teeth
-                    ctx.fillStyle = '#000';
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y + 8, 8, 0, Math.PI);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = '#fff';
-                    for (let i = -2; i <= 2; i++) {
-                        ctx.fillRect(this.x + i * 5 - 1, this.y + 8, 2, 4);
-                    }
-                    
-                    // Crown/Boss indicator
-                    ctx.fillStyle = '#fbbf24';
-                    for (let i = 0; i < 5; i++) {
-                        const angle = (Math.PI / 4) + (Math.PI / 8 * i);
-                        const crownX = this.x + Math.cos(angle - Math.PI / 2) * this.radius;
-                        const crownY = this.y + Math.sin(angle - Math.PI / 2) * this.radius;
-                        ctx.beginPath();
-                        ctx.arc(crownX, crownY, 5, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
+                const emojiMap = {
+                    basic: '👾',
+                    fast: '😼',
+                    tank: '👹',
+                    boss: '👑'
+                };
+                const emoji = emojiMap[this.type] || '👾';
+                ctx.font = `${this.radius * 2}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, this.x, this.y + 1);
 
                 // HP bar
                 if (this.hp < this.maxHp) {
@@ -1714,13 +1409,14 @@
         // LASER CLASS
         // ============================================
         class Laser {
-            constructor(x, y, angle, damage, length, width) {
+            constructor(x, y, angle, damage, length, width, color) {
                 this.x = x;
                 this.y = y;
                 this.angle = angle;
                 this.damage = damage;
                 this.length = length;
                 this.width = width;
+                this.color = color;
                 this.life = 10; // Short duration
                 this.endX = x + Math.cos(angle) * length;
                 this.endY = y + Math.sin(angle) * length;
@@ -1778,11 +1474,11 @@
                 ctx.globalAlpha = alpha;
                 
                 // Outer glow
-                ctx.strokeStyle = '#60a5fa';
+                ctx.strokeStyle = this.color;
                 ctx.lineWidth = this.width + 4;
                 ctx.lineCap = 'round';
                 ctx.shadowBlur = 20;
-                ctx.shadowColor = '#3b82f6';
+                ctx.shadowColor = this.color;
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y);
                 ctx.lineTo(this.endX, this.endY);
@@ -2282,7 +1978,7 @@
         }
 
         function updateCoinDisplay() {
-            document.getElementById('coinDisplay').textContent = `💰 ${game.totalCoins}`;
+            document.getElementById('coinDisplay').textContent = `💰 ${game.totalCoins} (pending)`;
         }
 
         // ============================================
@@ -2667,43 +2363,6 @@
         }
 
         // ============================================
-        // COMBO SYSTEM
-        // ============================================
-        function updateCombo() {
-            game.comboCount++;
-            game.comboTimer = CONFIG.COMBO_TIMEOUT;
-            
-            // Determine combo tier
-            let newTier = 0;
-            for (let i = 0; i < CONFIG.COMBO_TIERS.length; i++) {
-                if (game.comboCount >= CONFIG.COMBO_TIERS[i]) {
-                    newTier = i + 1;
-                }
-            }
-            
-            // Show combo display
-            const comboDisplay = document.getElementById('comboDisplay');
-            comboDisplay.style.display = 'block';
-            comboDisplay.textContent = `COMBO x${game.comboCount}`;
-            
-            // Update tier styling
-            comboDisplay.className = '';
-            if (newTier >= 5) comboDisplay.classList.add('tier5');
-            else if (newTier >= 4) comboDisplay.classList.add('tier4');
-            else if (newTier >= 3) comboDisplay.classList.add('tier3');
-            else if (newTier >= 2) comboDisplay.classList.add('tier2');
-            
-            game.comboTier = newTier;
-        }
-
-        function resetCombo() {
-            game.comboCount = 0;
-            game.comboTimer = 0;
-            game.comboTier = 0;
-            document.getElementById('comboDisplay').style.display = 'none';
-        }
-
-        // ============================================
         // SCREEN SHAKE
         // ============================================
         function addScreenShake(intensity) {
@@ -2731,13 +2390,8 @@
                 game.player.hp = Math.min(game.player.maxHp, game.player.hp + healAmount);
                 game.player.updateUI();
                 
-                // Bonus coins
-                const bonusCoins = CONFIG.WAVE_COMPLETION_BONUS * game.currentWave;
-                game.totalCoins += bonusCoins;
-                updateCoinDisplay();
-                
                 // Show wave complete notification
-                showWaveComplete(bonusCoins);
+                showWaveComplete();
             }
             
             game.currentWave++;
@@ -2770,7 +2424,7 @@
             game.spawnTimer = 0;
         }
 
-        function showWaveComplete(bonusCoins) {
+        function showWaveComplete() {
             // Create floating text notification
             const notification = document.createElement('div');
             notification.style.position = 'absolute';
@@ -2786,7 +2440,6 @@
             notification.style.textAlign = 'center';
             notification.innerHTML = `
                 WAVE COMPLETE!<br>
-                <span style="font-size: 32px; color: #fbbf24;">+${bonusCoins} 💰</span><br>
                 <span style="font-size: 24px; color: #10b981;">+30% HP ❤️</span>
             `;
             
@@ -2918,17 +2571,8 @@
                 game.enemies.forEach(enemy => enemy.update());
                 game.projectiles.forEach(proj => proj.update());
                 game.xpOrbs.forEach(orb => orb.update());
-                game.coins.forEach(coin => coin.update());
                 game.particles.forEach(particle => particle.update());
                 game.damageTexts.forEach(text => text.update());
-                
-                // Update combo timer
-                if (game.comboTimer > 0) {
-                    game.comboTimer--;
-                    if (game.comboTimer <= 0) {
-                        resetCombo();
-                    }
-                }
                 
             }
 
@@ -2938,7 +2582,6 @@
 
             // Draw entities
             game.xpOrbs.forEach(orb => orb.draw());
-            game.coins.forEach(coin => coin.draw());
             game.particles.forEach(particle => particle.draw());
             
             if (game.player) {
@@ -3034,8 +2677,7 @@
             game.totalCoins = 0;
             updateCoinDisplay();
             
-            // Reset combo and effects
-            resetCombo();
+            // Reset effects
             game.screenShake = 0;
             game.screenShakeIntensity = 0;
             
