@@ -28,6 +28,13 @@
             BOSS_WAVE_INTERVAL: 5, // Boss every 5 waves
             WAVE_COMPLETION_HEAL: 0.3, // Heal 30% of max HP
             WAVE_COMPLETION_BONUS: 20, // Bonus coins per wave
+            EARLY_WAVE_LIMIT: 3,
+            EARLY_WAVE_SPAWN_RATES: [1, 2, 3], // Spawn rates for waves 1-3
+            EARLY_WAVE_STAT_MULTIPLIERS: {
+                hp: 0.85,
+                speed: 0.9,
+                damage: 0.85
+            },
             
             // NEW: Spawn RATE system (enemies per second)
             // Wave 1 = 1/sec, Wave 2 = 3/sec, Wave 3 = 5/sec
@@ -73,8 +80,8 @@
             SPAWN_INTERVAL_FRAMES: 60, // Frames between individual spawns
             
             // XP and leveling
-            BASE_XP_TO_LEVEL: 100,
-            XP_SCALE: 1.2,
+            BASE_XP_TO_LEVEL: 80,
+            XP_SCALE: 1.15,
             XP_MAGNET_RADIUS: 100,
             
             // Weapon cooldowns (in frames, 60fps)
@@ -1129,12 +1136,15 @@
             setTypeStats(waveMult, speedMult, damageMult) {
                 // Calculate wave-based HP scaling (20% more HP per wave)
                 const waveHPMult = Math.pow(CONFIG.ENEMY_HP_PER_WAVE, game.currentWave - 1);
+                const earlyWaveMultiplier = game.currentWave <= CONFIG.EARLY_WAVE_LIMIT
+                    ? CONFIG.EARLY_WAVE_STAT_MULTIPLIERS
+                    : { hp: 1, speed: 1, damage: 1 };
                 
                 switch(this.type) {
                     case 'basic':
-                        this.hp = CONFIG.ENEMY_BASE_HP * waveHPMult;
-                        this.speed = CONFIG.ENEMY_BASE_SPEED * speedMult;
-                        this.damage = CONFIG.ENEMY_BASE_DAMAGE * damageMult;
+                        this.hp = CONFIG.ENEMY_BASE_HP * waveHPMult * earlyWaveMultiplier.hp;
+                        this.speed = CONFIG.ENEMY_BASE_SPEED * speedMult * earlyWaveMultiplier.speed;
+                        this.damage = CONFIG.ENEMY_BASE_DAMAGE * damageMult * earlyWaveMultiplier.damage;
                         this.radius = 12;
                         this.xpValue = 15 + (game.currentWave * 2);
                         this.color = '#ef4444';
@@ -1142,9 +1152,9 @@
                         break;
                         
                     case 'fast':
-                        this.hp = (CONFIG.ENEMY_BASE_HP * 0.6) * waveHPMult;
-                        this.speed = (CONFIG.ENEMY_BASE_SPEED * 1.8) * speedMult;
-                        this.damage = (CONFIG.ENEMY_BASE_DAMAGE * 0.7) * damageMult;
+                        this.hp = (CONFIG.ENEMY_BASE_HP * 0.6) * waveHPMult * earlyWaveMultiplier.hp;
+                        this.speed = (CONFIG.ENEMY_BASE_SPEED * 1.8) * speedMult * earlyWaveMultiplier.speed;
+                        this.damage = (CONFIG.ENEMY_BASE_DAMAGE * 0.7) * damageMult * earlyWaveMultiplier.damage;
                         this.radius = 10;
                         this.xpValue = 12 + (game.currentWave * 2);
                         this.color = '#f59e0b';
@@ -1152,9 +1162,9 @@
                         break;
                         
                     case 'tank':
-                        this.hp = (CONFIG.ENEMY_BASE_HP * 3) * waveHPMult;
-                        this.speed = (CONFIG.ENEMY_BASE_SPEED * 0.6) * speedMult;
-                        this.damage = (CONFIG.ENEMY_BASE_DAMAGE * 1.5) * damageMult;
+                        this.hp = (CONFIG.ENEMY_BASE_HP * 3) * waveHPMult * earlyWaveMultiplier.hp;
+                        this.speed = (CONFIG.ENEMY_BASE_SPEED * 0.6) * speedMult * earlyWaveMultiplier.speed;
+                        this.damage = (CONFIG.ENEMY_BASE_DAMAGE * 1.5) * damageMult * earlyWaveMultiplier.damage;
                         this.radius = 18;
                         this.xpValue = 40 + (game.currentWave * 5);
                         this.color = '#8b5cf6';
@@ -1162,9 +1172,9 @@
                         break;
                         
                     case 'boss':
-                        this.hp = (CONFIG.ENEMY_BASE_HP * 20) * waveHPMult;
-                        this.speed = (CONFIG.ENEMY_BASE_SPEED * 0.8) * speedMult;
-                        this.damage = (CONFIG.ENEMY_BASE_DAMAGE * 2) * damageMult;
+                        this.hp = (CONFIG.ENEMY_BASE_HP * 20) * waveHPMult * earlyWaveMultiplier.hp;
+                        this.speed = (CONFIG.ENEMY_BASE_SPEED * 0.8) * speedMult * earlyWaveMultiplier.speed;
+                        this.damage = (CONFIG.ENEMY_BASE_DAMAGE * 2) * damageMult * earlyWaveMultiplier.damage;
                         this.radius = 35;
                         this.xpValue = 200 + (game.currentWave * 20);
                         this.color = '#dc2626';
@@ -2627,11 +2637,11 @@
             document.getElementById('waveDisplay').textContent = `Wave ${game.currentWave}`;
             
             // NEW: Calculate spawn interval based on wave
-            // Wave 1: 1 per second (60 frames)
-            // Wave 2: 3 per second (20 frames)
-            // Wave 3: 5 per second (12 frames)
+            // Wave 1-3: use eased spawn rates
             // Formula: Spawn every (60 / spawn_rate) frames
-            const spawnRate = (game.currentWave * 2) - 1; // 1, 3, 5, 7, 9...
+            const spawnRate = game.currentWave <= CONFIG.EARLY_WAVE_LIMIT
+                ? CONFIG.EARLY_WAVE_SPAWN_RATES[game.currentWave - 1]
+                : (game.currentWave * 2) - 1; // 1, 3, 5, 7, 9...
             game.currentSpawnInterval = Math.max(10, Math.floor(60 / spawnRate)); // Min 10 frames (6 per sec max)
             
             console.log(`Wave ${game.currentWave}: Spawn rate = ${spawnRate}/sec, Interval = ${game.currentSpawnInterval} frames`);
