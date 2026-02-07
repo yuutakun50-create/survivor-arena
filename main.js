@@ -603,14 +603,11 @@
                 if (this.powerups.has(powerupId)) {
                     // Upgrade existing
                     const powerup = this.powerups.get(powerupId);
-                    powerup.level++;
                     
                     const definition = POWERUP_TYPES[powerupId];
-                    definition.onUpgrade(powerup.stats, powerup.level);
                     
-                    // Check for evolution (Level 5)
-                    if (definition.evolutionRequires && 
-                        powerup.level >= 5 && 
+                    if (definition.evolutionRequires &&
+                        powerup.level >= definition.maxLevel &&
                         this.powerups.has(definition.evolutionRequires)) {
                         
                         // Evolve weapon
@@ -621,6 +618,13 @@
                         this.createEvolutionEffect();
                         return;
                     }
+
+                    if (powerup.level >= definition.maxLevel) {
+                        return;
+                    }
+
+                    powerup.level++;
+                    definition.onUpgrade(powerup.stats, powerup.level);
                 } else {
                     // New powerup
                     const definition = POWERUP_TYPES[powerupId];
@@ -2280,9 +2284,12 @@
             
             options.forEach(powerupId => {
                 const definition = POWERUP_TYPES[powerupId];
-                const currentLevel = game.player.powerups.has(powerupId) 
-                    ? game.player.powerups.get(powerupId).level 
+                const currentLevel = game.player.powerups.has(powerupId)
+                    ? game.player.powerups.get(powerupId).level
                     : 0;
+                const levelLabel = definition.isEvolved
+                    ? 'Evolution'
+                    : `Level ${currentLevel + 1}`;
                 
                 const card = document.createElement('div');
                 card.className = 'powerup-card' + (definition.isEvolved ? ' evolved' : '');
@@ -2290,7 +2297,7 @@
                 card.innerHTML = `
                     <div class="powerup-icon">${definition.icon}</div>
                     <div class="powerup-name">${definition.name}</div>
-                    <div class="powerup-level">Level ${currentLevel + 1}</div>
+                    <div class="powerup-level">${levelLabel}</div>
                     <div class="powerup-desc">${definition.description}</div>
                 `;
                 
@@ -2336,6 +2343,14 @@
                     } else {
                         available.push(id);
                     }
+                } else if (
+                    definition.type === 'weapon' &&
+                    !definition.isEvolved &&
+                    definition.evolutionRequires &&
+                    game.player.powerups.has(definition.evolutionRequires) &&
+                    !game.player.powerups.has(definition.evolvedForm)
+                ) {
+                    available.push(definition.evolvedForm);
                 }
             });
             
